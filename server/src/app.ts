@@ -1,6 +1,6 @@
 import express from 'express';
 import http from "http";
-import { Server } from "socket.io";
+import { Server, Socket } from "socket.io";
 
 import allRoutes from './routes/mainRoutes'
 
@@ -14,13 +14,24 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-      origin: '*', // Allow requests from any origin
+      origin: process.env.endpoint, 
       methods: ['GET', 'POST'],
     }
 });
 
+interface Conversations {
+    [key: string]: Socket;
+  }
+
+const conversations: Conversations = {};
+
 io.on("connection", (socket) => {
     console.log("a user connected");
+
+    socket.on('start_conversation', ({ sessionId }) => {
+        conversations[sessionId] = socket;
+        console.log(`Conversation started with session ID: ${sessionId}`);
+    });
 
     socket.on("disconnect", () => {
         console.log("user disconnected");

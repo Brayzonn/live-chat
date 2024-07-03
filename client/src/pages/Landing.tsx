@@ -20,26 +20,33 @@ const Landing = () => {
 
 
   //web socket
+  const [sessionId] = useState<string>(() => `session-${Math.random().toString(36).substr(2, 9)}`);
   const [socket, setSocket] = useState<Socket | null>(null);
   const ENDPOINT = import.meta.env.VITE_BASE_URL ? import.meta.env.VITE_BASE_URL : '';
 
   const initiateSocket = () => {
     if (!socket) {
-        const newSocket = io(ENDPOINT);
-        setSocket(newSocket);
+      const newSocket = io(ENDPOINT);
+      setSocket(newSocket);
+
+      newSocket.emit('start_conversation', { sessionId });
+
+      newSocket.on('admin_message', (message: string) => {
+        console.log('Message from admin:', message);
+      });
     }
   }
 
   const closeSocket = () => {
     if (socket) {
-        socket.disconnect();
-        setSocket(null);
+      socket.disconnect();
+      setSocket(null);
     }
   }
 
-  const sendMessage = () => {
+  const sendMessage = (message: string) => {
     if (socket) {
-        socket.emit("send_message", { 'message': 'message' });
+      socket.emit("send_message", { sessionId, message });
     }
   };
 
