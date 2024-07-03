@@ -1,7 +1,8 @@
 import { useContext } from 'react';
-import { AppContext } from './context';
+import AppContextExports from './context';
 
 // Hook for consuming the context
 export const useGlobalContext = () => {
-  return useContext(AppContext);
+    const {  AppContext } = AppContextExports;
+    return useContext(AppContext);
 };

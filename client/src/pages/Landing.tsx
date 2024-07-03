@@ -1,39 +1,47 @@
 import  { useEffect, useState } from 'react';
-// import io, { Socket } from 'socket.io-client';
+import io, { Socket } from 'socket.io-client';
 
-import helloImage from '../../images/hello.png'
+// import helloImage from '../../images/hello.png'
 import botimage from '../../images/24-hours-support.png'
+
 
 import { BiSolidMessage } from "react-icons/bi";
 import { FaChevronLeft } from "react-icons/fa";
 import { IoIosSend } from "react-icons/io";
-import { Link } from 'react-router-dom';
 
+import { useGlobalContext } from '../context/useGlobalContext';
 import Chatbox from './Chatbox';
 
 const Landing = () => {
+  const {supportTexts} =  useGlobalContext();
 
   const [chatWindow, updateChatWindow] = useState<boolean>(false)
-  //web socket
-  // const [socket, setSocket] = useState<Socket | null>(null);
-  // const ENDPOINT = process.env.baseURL ? process.env.baseURL : '';
-
-  // useEffect(() => {
-  //     const newSocket = io(ENDPOINT);
-  //     setSocket(newSocket);
-
-  //     return () => {
-  //       newSocket.disconnect();
-  //     };
-  // }, [ENDPOINT]);
-
-  // const sendMessage = () => {
-  //     if (socket) {
-  //       socket.emit("send_message", { 'message': 'message' });
-  //     }
-  // };
-
   const [messageBoxActive, updateMessageBoxActive] = useState<boolean>(false)
+
+
+  //web socket
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const ENDPOINT = import.meta.env.VITE_BASE_URL ? import.meta.env.VITE_BASE_URL : '';
+
+  const initiateSocket = () => {
+    if (!socket) {
+        const newSocket = io(ENDPOINT);
+        setSocket(newSocket);
+    }
+  }
+
+  const closeSocket = () => {
+    if (socket) {
+        socket.disconnect();
+        setSocket(null);
+    }
+  }
+
+  const sendMessage = () => {
+    if (socket) {
+        socket.emit("send_message", { 'message': 'message' });
+    }
+  };
 
   return (
     <div className="absolute h-[100vh] w-full flex flex-col justify-start items-start overflow-hidden bg-white">
@@ -46,7 +54,7 @@ const Landing = () => {
               <div className='fixed bottom-0 right-0 w-screen h-screen flex flex-col justify-start items-start bg-white border-inherit sm:right-[10px] sm:bottom-[20px] sm:border sm:rounded-[20px] sm:w-[400px] sm:h-[580px] shadow-[0px_4px_10px_rgba(0,0,0,0.1),0px_2px_5px_rgba(0,0,0,0.05)] overflow-hidden'>
                   {!messageBoxActive ? <div className='relative w-full bg-inherit h-full flex flex-col justify-start items-start'>
                         <div className='px-4 py-[2rem] h-[300px] w-full bg-gradient-to-r from-zinc-100 to-slate-300 flex flex-col items-center justify-start space-y-8 sm:space-y-12'>
-                              <button onClick={()=>updateChatWindow(false)} className='w-full flex justify-between items-start'>
+                              <button onClick={()=>{updateChatWindow(false); closeSocket()}} className='w-full flex justify-between items-start'>
                                   <FaChevronLeft className="text-black font-bold text-[19px]"/>
                               </button>
 
@@ -54,7 +62,6 @@ const Landing = () => {
                                   <div className='flex justify-start items-center space-x-1'>
                                       <h1 className='text-[23px] text-black font-bold'>Hi there </h1>
                                       <div>✋</div>
-                                      {/* <img src={helloImage} className = "w-[20px] h-[20px]" alt="✋" />  */}
                                   </div>
                                   
                                   <p className='text-[16px] text-black max-w-[300px]'>Welcome to Chatbot. How can we help you today?</p>
@@ -64,23 +71,19 @@ const Landing = () => {
                                       <h3 className='text-[19px] w-full text-left font-bold'>Start a conversation</h3>
 
                                       <div className='w-full flex items-center space-x-2'>
-                                          {/* <div className='w-[50px] h-[50px] bg-gradient-to-r from-zinc-100 to-slate-300 rounded-[30px] flex justify-center items-center'> */}
-                                              <img src={botimage} alt="profile" className='shrink-0 w-[40px] h-[40px]'/>
-                                          {/* </div> */}
-                                          
+                                          <img src={botimage} alt="profile" className='shrink-0 w-[40px] h-[40px]'/>
                                           <p className='text-[15px] max-w-[300px]'>Our support are online and will help </p>
                                       </div>
 
-                                      <button onClick={()=>updateMessageBoxActive(true)} className='w-full text-white text-[15px] bg-[#0d3a99] border border-[#08389f] rounded-md min-h-[24px] p-2 flex justify-center items-center space-x-4'>
-                                              <p>Start Conversation</p>  
-                                              <IoIosSend className = "text-[20px] text-white font-bold"/>
+                                      <button onClick={()=>{updateMessageBoxActive(true); initiateSocket()}} className='w-full text-white text-[15px] bg-[#0d3a99] border border-[#08389f] rounded-md min-h-[24px] p-2 flex justify-center items-center space-x-4'>
+                                          <p>Start Conversation</p>  
+                                          <IoIosSend className = "text-[20px] text-white font-bold"/>
                                       </button>
                               </div>
                         </div>
-
                   </div>
                   :
-                  <Chatbox updateMessageBoxActive = {updateMessageBoxActive}/>}
+                  <Chatbox updateMessageBoxActive = {updateMessageBoxActive} supportMessage= {supportTexts} />}
               </div>
               }
         </div>
