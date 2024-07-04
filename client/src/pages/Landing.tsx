@@ -15,6 +15,8 @@ import Chatbox from './Chatbox';
 const Landing = () => {
   const {supportTexts} =  useGlobalContext();
 
+  const [adminMessages, updateAdminMessages] = useState<string[]>([])
+  const [messages, setMessages] = useState<string[]>(supportTexts);
   const [chatWindow, updateChatWindow] = useState<boolean>(false)
   const [messageBoxActive, updateMessageBoxActive] = useState<boolean>(false)
 
@@ -26,27 +28,37 @@ const Landing = () => {
 
   const initiateSocket = () => {
     if (!socket) {
-      const newSocket = io(ENDPOINT);
-      setSocket(newSocket);
+        const newSocket = io(ENDPOINT);
+        setSocket(newSocket);
 
-      newSocket.emit('start_conversation', { sessionId });
+        newSocket.on('admin_welcome_message', (data) => {
+            const { message } = data; 
+            updateAdminMessages((prevMessages) => [...prevMessages, message]);
+       });
+        
+        newSocket.emit('start_conversation', { sessionId });
 
-      newSocket.on('admin_message', (message: string) => {
-        console.log('Message from admin:', message);
-      });
+        newSocket.on('receive_message', (data: { message: string }) => {
+            console.log('Message from server:', data.message);
+            setMessages((prevMessages) => [...prevMessages, data.message]);
+        });
+        
+        newSocket.on('admin_message', (message: string) => {
+            console.log('Message from admin:', message);
+        });
     }
   }
-
+ 
   const closeSocket = () => {
     if (socket) {
-      socket.disconnect();
-      setSocket(null);
+        socket.disconnect();
+        setSocket(null);
     }
   }
 
   const sendMessage = (message: string) => {
     if (socket) {
-      socket.emit("send_message", { sessionId, message });
+        socket.emit("user_message", { sessionId, message });
     }
   };
 
@@ -54,45 +66,47 @@ const Landing = () => {
     <div className="absolute h-[100vh] w-full flex flex-col justify-start items-start overflow-hidden bg-white">
         <div className="relative h-full w-full overflow-x-hidden flex flex-col justify-start items-start text-black">              
 
-              {!chatWindow ? <button onClick={()=> updateChatWindow(true)} className='fixed bottom-[40px] right-[10px] w-[60px] h-[60px] flex justify-center items-center bg-black border-black rounded-full'>
-                      <BiSolidMessage className = "text-white text-[29px]" />
-                  </button>   
+              {!chatWindow ? (<button onClick={()=> updateChatWindow(true)} className='fixed bottom-[40px] right-[10px] w-[60px] h-[60px] flex justify-center items-center bg-black border-black rounded-full'>
+                  <BiSolidMessage className = "text-white text-[29px]" />
+              </button>)
               :
               <div className='fixed bottom-0 right-0 w-screen h-screen flex flex-col justify-start items-start bg-white border-inherit sm:right-[10px] sm:bottom-[20px] sm:border sm:rounded-[20px] sm:w-[400px] sm:h-[580px] shadow-[0px_4px_10px_rgba(0,0,0,0.1),0px_2px_5px_rgba(0,0,0,0.05)] overflow-hidden'>
-                  {!messageBoxActive ? <div className='relative w-full bg-inherit h-full flex flex-col justify-start items-start'>
-                        <div className='px-4 py-[2rem] h-[300px] w-full bg-gradient-to-r from-zinc-100 to-slate-300 flex flex-col items-center justify-start space-y-8 sm:space-y-12'>
-                              <button onClick={()=>{updateChatWindow(false); closeSocket()}} className='w-full flex justify-between items-start'>
-                                  <FaChevronLeft className="text-black font-bold text-[19px]"/>
-                              </button>
+                  {!messageBoxActive ? 
+                      (<div className='relative w-full bg-inherit h-full flex flex-col justify-start items-start'>
+                            <div className='px-4 py-[2rem] h-[300px] w-full bg-gradient-to-r from-zinc-100 to-slate-300 flex flex-col items-center justify-start space-y-8 sm:space-y-12'>
+                                  <button onClick={()=>{updateChatWindow(false); closeSocket()}} className='w-full flex justify-between items-start'>
+                                      <FaChevronLeft className="text-black font-bold text-[19px]"/>
+                                  </button>
 
-                              <div className='w-full flex flex-col space-y-1 '>
-                                  <div className='flex justify-start items-center space-x-1'>
-                                      <h1 className='text-[23px] text-black font-bold'>Hi there </h1>
-                                      <div>✋</div>
-                                  </div>
-                                  
-                                  <p className='text-[16px] text-black max-w-[300px]'>Welcome to Chatbot. How can we help you today?</p>
-                              </div>
-
-                              <div className='relative w-[95%] px-4 py-2 min-h-[190px] bg-white flex flex-col justify-evenly items-center border border-inherit rounded-[10px] shadow-[0px_4px_10px_rgba(0,0,0,0.1),0px_2px_5px_rgba(0,0,0,0.05)] '>
-                                      <h3 className='text-[19px] w-full text-left font-bold'>Start a conversation</h3>
-
-                                      <div className='w-full flex items-center space-x-2'>
-                                          <img src={botimage} alt="profile" className='shrink-0 w-[40px] h-[40px]'/>
-                                          <p className='text-[15px] max-w-[300px]'>Our support are online and will help </p>
+                                  <div className='w-full flex flex-col space-y-1 '>
+                                      <div className='flex justify-start items-center space-x-1'>
+                                          <h1 className='text-[23px] text-black font-bold'>Hi there </h1>
+                                          <div>✋</div>
                                       </div>
+                                      
+                                      <p className='text-[16px] text-black max-w-[300px]'>Welcome to Chatbot. How can we help you today?</p>
+                                  </div>
 
-                                      <button onClick={()=>{updateMessageBoxActive(true); initiateSocket()}} className='w-full text-white text-[15px] bg-[#0d3a99] border border-[#08389f] rounded-md min-h-[24px] p-2 flex justify-center items-center space-x-4'>
-                                          <p>Start Conversation</p>  
-                                          <IoIosSend className = "text-[20px] text-white font-bold"/>
-                                      </button>
-                              </div>
-                        </div>
-                  </div>
+                                  <div className='relative w-[95%] px-4 py-2 min-h-[190px] bg-white flex flex-col justify-evenly items-center border border-inherit rounded-[10px] shadow-[0px_4px_10px_rgba(0,0,0,0.1),0px_2px_5px_rgba(0,0,0,0.05)] '>
+                                          <h3 className='text-[19px] w-full text-left font-bold'>Start a conversation</h3>
+
+                                          <div className='w-full flex items-center space-x-2'>
+                                              <img src={botimage} alt="profile" className='shrink-0 w-[40px] h-[40px]'/>
+                                              <p className='text-[15px] max-w-[300px]'>Our support are online and will help </p>
+                                          </div>
+
+                                          <button onClick={()=>{updateMessageBoxActive(true); initiateSocket()}} className='w-full text-white text-[15px] bg-[#0d3a99] border border-[#08389f] rounded-md min-h-[24px] p-2 flex justify-center items-center space-x-4'>
+                                              <p>Start Conversation</p>  
+                                              <IoIosSend className = "text-[20px] text-white font-bold"/>
+                                          </button>
+                                  </div>
+                            </div>
+                      </div>)
                   :
-                  <Chatbox updateMessageBoxActive = {updateMessageBoxActive} supportMessage= {supportTexts} />}
+                  <Chatbox adminMessages={adminMessages} sendMessage = {sendMessage} updateMessageBoxActive = {updateMessageBoxActive} supportMessage= {supportTexts} />}
               </div>
               }
+
         </div>
     </div>
   );

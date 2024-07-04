@@ -12,6 +12,7 @@ import connectToDb from './config/db';
 
 const app = express();
 const server = http.createServer(app);
+
 const io = new Server(server, {
     cors: {
       origin: process.env.endpoint, 
@@ -21,7 +22,7 @@ const io = new Server(server, {
 
 interface Conversations {
     [key: string]: Socket;
-  }
+}
 
 const conversations: Conversations = {};
 
@@ -30,16 +31,30 @@ io.on("connection", (socket) => {
 
     socket.on('start_conversation', ({ sessionId }) => {
         conversations[sessionId] = socket;
-        console.log(`Conversation started with session ID: ${sessionId}`);
+        conversations[sessionId].emit("admin_welcome_message", { message: 'Hello! Welcome to Botchat!' });
+        conversations[sessionId].emit("admin_welcome_message", { message: 'How can I be of help?' });
     });
 
     socket.on("disconnect", () => {
-        console.log("user disconnected");
+        console.log("User disconnected");
+        for (const sessionId in conversations) {
+          if (conversations[sessionId] === socket) {
+            delete conversations[sessionId];
+            break;
+          }
+        }
     });
-
-    socket.on("send_message", (data) => {
+      
+    socket.on("user_message", (data) => {
         console.log("Message received: ", data);
-        socket.emit("receive_message", data); 
+
+        const { sessionId, message } = data;
+
+        if (conversations[sessionId]) {
+            conversations[sessionId].emit("receive_message", { message: 'fuck off' });
+        } else {
+            console.error(`No conversation found for session ID: ${sessionId}`);
+        }
     });
 });
 
