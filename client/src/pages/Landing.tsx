@@ -43,8 +43,8 @@ const Landing = () => {
 
             newSocket.emit('reconnect_session', { sessionId: parsedSessionID });
 
-            newSocket.on('received_user_message', (data) => {
-                const { message, updatedSessionInfo } = data;
+            newSocket.on('all_user_messages', (data) => {
+                const { updatedSessionInfo } = data;
                 updateUserConversation(updatedSessionInfo)
             });
 
@@ -62,27 +62,19 @@ const Landing = () => {
 
             sessionStorage.setItem('userSessionID', JSON.stringify(sessionId))
 
-            newSocket.on('admin_welcome_message', (data) => {
-                console.log(data)
-            }); 
             
             newSocket.emit('start_conversation', { sessionId });
 
-            newSocket.on('received_user_message', (data) => {
-
-                const { message, updatedSessionInfo } = data;
-                console.log(message + '' + updatedSessionInfo)
+            newSocket.on('all_user_messages', (data) => {
+                const { updatedSessionInfo } = data;
+                updateUserConversation(updatedSessionInfo)
             });
             
-            newSocket.on('admin_message', (data) => {
-                const { message } = data; 
-            });
         }else{
             if(socket){
-                socket.on('received_user_message', (data) => {
-                    const { message, updatedSessionInfo } = data;
+                socket.on('all_user_messages', (data) => {
+                    const { updatedSessionInfo } = data;
                     updateUserConversation(updatedSessionInfo)
-                    console.log(updatedSessionInfo)
                 });
             }      
         }

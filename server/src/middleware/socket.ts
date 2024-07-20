@@ -34,15 +34,25 @@ const webSocketConfig = async (server: http.Server, corsOptions: CorsOptions) =>
                 const existingSession = await messageModel.findOne({ sessionID: sessionId });
         
                 if (!existingSession) {
+
+                    const newMessage = { text: 'Hello! How can I help you?', timestamp: new Date(), isAdmin: true };
+                   
                     const createSessionData = new messageModel({
                         sessionID: sessionId,
                         messages: []
                     });
+
+                    createSessionData.messages.push(newMessage);
         
                     await createSessionData.save();
                    
                     socket.join(sessionId);
-                    io.to(socket.id).emit('admin_welcome_message', { message: 'Hello! How can I help you?' });
+
+                    const updatedSessionInfo = await messageModel.findOne({sessionID: sessionId}, { _id: 0, 'messages._id': 0 })
+                            
+                    if(updatedSessionInfo){
+                        io.in(sessionId).emit("all_user_messages", { updatedSessionInfo });
+                    }
                 }
 
             } catch (error) {
@@ -64,7 +74,7 @@ const webSocketConfig = async (server: http.Server, corsOptions: CorsOptions) =>
                 const updatedSessionInfo = await messageModel.findOne({sessionID: sessionId}, { _id: 0, 'messages._id': 0 })
                             
                 if(updatedSessionInfo){
-                    io.in(sessionId).emit("received_user_message", { updatedSessionInfo });
+                    io.in(sessionId).emit("all_user_messages", { updatedSessionInfo });
                 }
             }
         });
@@ -89,7 +99,7 @@ const webSocketConfig = async (server: http.Server, corsOptions: CorsOptions) =>
                                 const updatedSessionInfo = await messageModel.findOne({sessionID: sessionId}, { _id: 0, 'messages._id': 0 })
                             
                                 if(updatedSessionInfo){
-                                    io.in(sessionId).emit("received_user_message", { message, updatedSessionInfo });
+                                    io.in(sessionId).emit("all_user_messages", { message, updatedSessionInfo });
                                 }
                                
                             } catch (error) {
