@@ -1,65 +1,118 @@
-import  { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import io, { Socket } from 'socket.io-client';
 
-// import helloImage from '../../images/hello.png'
 import botimage from '../../images/24-hours-support.png'
-
 
 import { BiSolidMessage } from "react-icons/bi";
 import { FaChevronLeft } from "react-icons/fa";
 import { IoIosSend } from "react-icons/io";
 
-import { useGlobalContext } from '../context/useGlobalContext';
 import Chatbox from './Chatbox';
+import { ConversationSchema } from '../assets/Types';
+
 
 const Landing = () => {
-  const {supportTexts} =  useGlobalContext();
+  
+  //session storate variables
+  const userSessionIDFromSessionStorage = sessionStorage.getItem('userSessionID');
 
-  const [adminMessages, updateAdminMessages] = useState<string[]>([])
-  const [messages, setMessages] = useState<string[]>(supportTexts);
+  //chat window
   const [chatWindow, updateChatWindow] = useState<boolean>(false)
   const [messageBoxActive, updateMessageBoxActive] = useState<boolean>(false)
-
 
   //web socket
   const [sessionId] = useState<string>(() => `session-${Math.random().toString(36).substr(2, 9)}`);
   const [socket, setSocket] = useState<Socket | null>(null);
   const ENDPOINT = import.meta.env.VITE_BASE_URL ? import.meta.env.VITE_BASE_URL : '';
+  const [userConversation, updateUserConversation] = useState<ConversationSchema>({
+        sessionID: '',
+        messages: []
+  })
 
+
+  //check for socket session ID in session storage and run initiateSocket
+  useEffect(()=>{
+
+        if(userSessionIDFromSessionStorage && !socket){
+
+            const parsedSessionID = JSON.parse(userSessionIDFromSessionStorage);
+
+            const newSocket = io(ENDPOINT);
+
+            setSocket(newSocket);
+
+            newSocket.emit('reconnect_session', { sessionId: parsedSessionID });
+
+            newSocket.on('received_user_message', (data) => {
+                const { message, updatedSessionInfo } = data;
+                updateUserConversation(updatedSessionInfo)
+            });
+
+            return initiateSocket()
+        }
+
+   }, [])
+
+
+  //socket initialization
   const initiateSocket = () => {
-    if (!socket) {
-        const newSocket = io(ENDPOINT);
-        setSocket(newSocket);
+        if (!userSessionIDFromSessionStorage) {
+            const newSocket = io(ENDPOINT);
+            setSocket(newSocket);
 
-        newSocket.on('admin_welcome_message', (data) => {
-            const { message } = data; 
-            updateAdminMessages((prevMessages) => [...prevMessages, message]);
-       });
-        
-        newSocket.emit('start_conversation', { sessionId });
+            sessionStorage.setItem('userSessionID', JSON.stringify(sessionId))
 
-        newSocket.on('receive_message', (data: { message: string }) => {
-            console.log('Message from server:', data.message);
-            setMessages((prevMessages) => [...prevMessages, data.message]);
-        });
-        
-        newSocket.on('admin_message', (message: string) => {
-            console.log('Message from admin:', message);
-        });
-    }
+            newSocket.on('admin_welcome_message', (data) => {
+                console.log(data)
+            }); 
+            
+            newSocket.emit('start_conversation', { sessionId });
+
+            newSocket.on('received_user_message', (data) => {
+
+                const { message, updatedSessionInfo } = data;
+                console.log(message + '' + updatedSessionInfo)
+            });
+            
+            newSocket.on('admin_message', (data) => {
+                const { message } = data; 
+            });
+        }else{
+            if(socket){
+                socket.on('received_user_message', (data) => {
+                    const { message, updatedSessionInfo } = data;
+                    updateUserConversation(updatedSessionInfo)
+                    console.log(updatedSessionInfo)
+                });
+            }      
+        }
   }
  
+  //close socket connection
   const closeSocket = () => {
-    if (socket) {
-        socket.disconnect();
-        setSocket(null);
-    }
+        if (socket) {
+            socket.disconnect();
+            setSocket(null);
+        }
   }
 
+
+  //when user sends message to chat
   const sendMessage = (message: string) => {
-    if (socket) {
-        socket.emit("user_message", { sessionId, message });
-    }
+
+        const storedUserSession = sessionStorage.getItem('userSessionID');
+
+        let sessionToUse = sessionId; 
+
+        if (storedUserSession) {
+            const userSessionIDFromSessionStorage = JSON.parse(storedUserSession);
+            sessionToUse = userSessionIDFromSessionStorage ? userSessionIDFromSessionStorage : sessionId;
+        }
+
+        if (socket) {
+            socket.emit("user_message", { sessionId: sessionToUse, message });
+        }
+
   };
 
   return (
@@ -103,7 +156,7 @@ const Landing = () => {
                             </div>
                       </div>)
                   :
-                  <Chatbox adminMessages={adminMessages} sendMessage = {sendMessage} updateMessageBoxActive = {updateMessageBoxActive} supportMessage= {supportTexts} />}
+                  <Chatbox conversation={userConversation}  sendMessage = {sendMessage} updateMessageBoxActive = {updateMessageBoxActive} />}
               </div>
               }
 

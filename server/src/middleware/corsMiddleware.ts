@@ -1,8 +1,10 @@
 import cors, { CorsOptions } from 'cors';
 
-const corsOptions: CorsOptions = {
+export const corsOptions: CorsOptions = {
   origin: ['http://localhost:3000'],
   credentials: true
 };
 
-export default cors(corsOptions);
+const corsMiddleware = cors(corsOptions);
+
+export default corsMiddleware;
