@@ -75,10 +75,6 @@ const AdminChatBox = () => {
         
     }
 
- 
-
-
-
 
   return (
     <div className="absolute h-[100vh] w-full flex flex-col justify-start items-start overflow-hidden bg-white">

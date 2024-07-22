@@ -62,7 +62,7 @@ const webSocketConfig = async (server: http.Server, corsOptions: CorsOptions) =>
 
 
         //reconnect user to session
-        socket.on('reconnect_session', async ({ sessionId }) => {
+        socket.on('reconnect_session', async ({ sessionId }: { sessionId: string }) => {
 
             const findconversation = await conversationModel.findOne({sessionID: sessionId});
     

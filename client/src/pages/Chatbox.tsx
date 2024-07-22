@@ -47,21 +47,23 @@ const Chatbox: React.FC<ChatboxProps> = ({sendMessage, updateMessageBoxActive, c
                         <div key={index} className='w-full pt-4 flex justify-start items-center space-x-3'>
                             <div className='flex'>
                                 <img src={botImage} alt="profile" className='shrink-0 w-[25px] h-[25px]' />
-                                <div className='w-[8px] h-[8px] rounded-[10px] bg-green-400 shrink-0'></div>
+                                {/* <div className='w-[8px] h-[8px] rounded-[10px] bg-green-400 shrink-0'></div> */}
                             </div>
                             
                             <div className='flex flex-col space-y-1'>
                                 <div className='p-4 bg-[#f5f5f5] border border-[#f5f5f5] rounded-[5px]'>
                                     <p className='text-[14px] text-black '>{data.text}</p>
                                 </div>
+                                <p className='text-[#bbbbbb] text-[13px]'>{data.timestamp}</p>
                             </div>
                         </div>
                 ) : (
                     <div key={index} className='w-full flex flex-col justify-start items-end space-x-3'>
-                        <div className='flex flex-col space-y-1'>
+                        <div className='flex flex-col items-end space-y-1'>
                             <div className='p-4 bg-[#08389f] border border-[#024AE8] rounded-[5px]'>
                                 <p className='text-[15px] text-white '>{data.text}</p>
                             </div>
+                            <p className='text-[#bbbbbb] text-[13px]'>{data.timestamp}</p>
                         </div>
                     </div>
                     )
