@@ -88,11 +88,11 @@ const AdminChatBox = () => {
 
                             <p>Active Rooms</p>
 
-                            {allSessionData.map((sessionId) => (
+                            {/* {allSessionData.map((sessionId) => (
                                 <button onClick={()=> getRoomInfo(sessionId.sessionID)} key={(sessionId.sessionID)} className='p-4 bg-[#08389f] border border-[#024AE8] rounded-[5px]'>
                                     <p className='text-[15px] text-white '>{sessionId.sessionID}</p>
                                 </button>
-                            ))}
+                            ))} */}
                         </>
                         :
                         <Chatbox conversation={activeUserSessionData} sendMessage = {sendMessage} updateMessageBoxActive = {updateChatBoxActivity} />

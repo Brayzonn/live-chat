@@ -8,7 +8,8 @@ import { FaChevronLeft } from "react-icons/fa";
 import { IoIosSend } from "react-icons/io";
 
 import Chatbox from './Chatbox';
-import { ConversationSchema, MessageFormat } from '../assets/Types';
+// import {formatMessageTimestamp} from '../assets/HelperFunctions'
+import { ConversationSchema } from '../assets/Types';
 
 
 const Landing = () => {
@@ -29,17 +30,6 @@ const Landing = () => {
         messages: []
   })
 
-  const formatMessageTimestamp = (message: MessageFormat) => {
-    return {
-        ...message,
-        timestamp: new Date(message.timestamp).toLocaleString('en-US', {
-            hour: 'numeric',
-            minute: 'numeric',
-            hour12: true
-        })
-    };
-  };
-
 
   //check for socket session ID in session storage and run initiateSocket
   useEffect(()=>{
@@ -56,10 +46,11 @@ const Landing = () => {
 
             newSocket.on('all_user_messages', (data) => {
                 const { updatedSessionInfo } = data;
-                updateUserConversation({
-                    ...updatedSessionInfo,
-                    messages: updatedSessionInfo.messages.map(formatMessageTimestamp)
-                });
+                // updateUserConversation({
+                //     ...updatedSessionInfo,
+                //     messages: updatedSessionInfo.messages.map(formatMessageTimestamp)
+                // });
+                updateUserConversation(updatedSessionInfo)
             });
 
             return initiateSocket()
@@ -81,19 +72,21 @@ const Landing = () => {
 
             newSocket.on('all_user_messages', (data) => {
                 const { updatedSessionInfo } = data;
-                updateUserConversation({
-                    ...updatedSessionInfo,
-                    messages: updatedSessionInfo.messages.map(formatMessageTimestamp)
-                });
+                // updateUserConversation({
+                //     ...updatedSessionInfo,
+                //     messages: updatedSessionInfo.messages.map(formatMessageTimestamp)
+                // });
+                updateUserConversation(updatedSessionInfo)
             });   
         }else{
             if(socket){
                 socket.on('all_user_messages', (data) => {
                     const { updatedSessionInfo } = data;
-                    updateUserConversation({
-                        ...updatedSessionInfo,
-                        messages: updatedSessionInfo.messages.map(formatMessageTimestamp)
-                    });
+                    // updateUserConversation({
+                    //     ...updatedSessionInfo,
+                    //     messages: updatedSessionInfo.messages.map(formatMessageTimestamp)
+                    // });
+                    updateUserConversation(updatedSessionInfo)
                 });
             }      
         }
