@@ -13,9 +13,7 @@ export interface ConversationSchema{
 export interface MessageFormat {
     text: string;
     isAdmin: boolean;
-    timestamp: Date;
-
-    
+    timestamp: Date;   
 } 
 
 export interface UserMessageSchema {
@@ -25,5 +23,6 @@ export interface UserMessageSchema {
 export interface ChatboxProps {
     updateMessageBoxActive: React.Dispatch<React.SetStateAction<boolean>>,
     conversation: ConversationSchema,
+    closeSocket: () => void,
     sendMessage: (message: string) => void,
 }

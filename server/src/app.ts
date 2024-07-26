@@ -29,4 +29,4 @@ connectToDb()
 
 const PORT = process.env.PORT || 3300;
 
-server.listen(PORT, () => console.log(`template app listening on port ${PORT}!`));
+server.listen(PORT, () => console.log(`chat bot listening on port ${PORT}!`));

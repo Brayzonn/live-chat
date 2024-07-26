@@ -8,7 +8,6 @@ import { FaChevronLeft } from "react-icons/fa";
 import { IoIosSend } from "react-icons/io";
 
 import Chatbox from './Chatbox';
-// import {formatMessageTimestamp} from '../assets/HelperFunctions'
 import { ConversationSchema } from '../assets/Types';
 
 
@@ -20,6 +19,7 @@ const Landing = () => {
   //chat window
   const [chatWindow, updateChatWindow] = useState<boolean>(false)
   const [messageBoxActive, updateMessageBoxActive] = useState<boolean>(false)
+  const [isAdminOnline, updateIsAdminOnline] = useState<boolean>(false)
 
   //web socket
   const [sessionId] = useState<string>(() => `session-${Math.random().toString(36).substr(2, 9)}`);
@@ -46,10 +46,6 @@ const Landing = () => {
 
             newSocket.on('all_user_messages', (data) => {
                 const { updatedSessionInfo } = data;
-                // updateUserConversation({
-                //     ...updatedSessionInfo,
-                //     messages: updatedSessionInfo.messages.map(formatMessageTimestamp)
-                // });
                 updateUserConversation(updatedSessionInfo)
             });
 
@@ -72,21 +68,23 @@ const Landing = () => {
 
             newSocket.on('all_user_messages', (data) => {
                 const { updatedSessionInfo } = data;
-                // updateUserConversation({
-                //     ...updatedSessionInfo,
-                //     messages: updatedSessionInfo.messages.map(formatMessageTimestamp)
-                // });
                 updateUserConversation(updatedSessionInfo)
             });   
+
+            newSocket.on('admin_message', (data) => {
+                const { message } = data;
+                console.log(message)
+            });
+
         }else{
             if(socket){
                 socket.on('all_user_messages', (data) => {
                     const { updatedSessionInfo } = data;
-                    // updateUserConversation({
-                    //     ...updatedSessionInfo,
-                    //     messages: updatedSessionInfo.messages.map(formatMessageTimestamp)
-                    // });
                     updateUserConversation(updatedSessionInfo)
+                });
+
+                socket.on('admin_message', (data) => {
+                    const { message } = data;
                 });
             }      
         }
@@ -115,6 +113,14 @@ const Landing = () => {
 
         if (socket) {
             socket.emit("user_message", { sessionId: sessionToUse, message });
+            
+            
+            socket.on('admin_activity', (data) => {
+                const { message } = data;
+                if (message && message.trim() !== '') {
+                    updateIsAdminOnline(true)
+                } 
+            });
         }
 
   };
@@ -160,7 +166,7 @@ const Landing = () => {
                             </div>
                       </div>)
                   :
-                  <Chatbox conversation={userConversation}  sendMessage = {sendMessage} updateMessageBoxActive = {updateMessageBoxActive} />}
+                  <Chatbox closeSocket = {closeSocket} conversation={userConversation}  sendMessage = {sendMessage} updateMessageBoxActive = {updateMessageBoxActive} />}
               </div>
               }
 

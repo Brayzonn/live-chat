@@ -119,39 +119,72 @@ const webSocketConfig = async (server: http.Server, corsOptions: CorsOptions) =>
 
 
         //send all available session data to admin on dashboard login
-        socket.on('admin_join', async ({ sessionId }: { sessionId: string }) => {
-            const findConversation = await conversationModel.find({})
+        socket.on('admin_signin', async ({ sessionId }: { sessionId: string }) => {
+            const findConversations = await conversationModel.find({});
+            
+            if (findConversations.length === 0) {
+                io.to(sessionId).emit('admin_errors_feedback', { message: 'No sessions available' });
+            } else {
+                socket.join(sessionId)
 
-            if(sessionId === "admin"){
-                if (findConversation.length === 0) {
-                    io.to(sessionId).emit('admin_errors_feedback', { message: 'No sessions available' });
-                } else {
-                    for (const sessionID of findConversation) {
-                        socket.join(sessionId);
-        
-                        try {
-                            const sessionData = await messageModel.find({ sessionID: sessionID }, { _id: 0, 'messages._id': 0 });
-                            socket.emit('active_rooms_info', { sessionData });
-                            io.to(sessionId).emit('admin_message', { message: 'Admin has joined the conversation' });
-                        } catch (err) {
-                            console.error(`Error fetching data for session ID: ${sessionId}`, err);
-                        }
+                const allSessionData = [];
+    
+                for (const conversation of findConversations) {
+                    try {
+                        const sessionData = await messageModel.find({ sessionID: conversation.sessionID }, { _id: 0, 'messages._id': 0 });
+                        allSessionData.push(...sessionData);
+                    } catch (err) {
+                        console.error(`Error fetching data for conversation ID: ${conversation.sessionID}`, err);
                     }
                 }
+                io.to(sessionId).emit('active_rooms_info', { allSessionData });
+            }
+        });
+        
+        // Handle the admin joining a user's conversation
+        socket.on('admin_join_conversation', async ({ userSessionId, adminSessionId }: { userSessionId: string, adminSessionId: string }) => {
+            try {
+                const existingSession = await messageModel.findOne({ sessionID: userSessionId }, { _id: 0, 'messages._id': 0 });
+
+                if(existingSession){
+                    socket.join(userSessionId);
+                    io.to(adminSessionId).emit("all_user_messages", {existingSession });
+                    io.to(userSessionId).emit('admin_activity', { message: 'Admin has joined the conversation' });
+                    io.to(adminSessionId).emit('admin_activity',{ message: `You have joined the session: ${userSessionId}` });
+                }
+            } catch (error) {
+                    console.error('Error joining admin to user session:', error);
+                    socket.emit('admin_errors_feedback', { message: 'Failed to join the session' });
             }
         });
 
-        // socket.on('admin_message', async (data: { sessionId: string, message: string }) => {
-        //     const { sessionId, message } = data;
 
-        //     const findConversation = await ConversationModel.findOne({sessionId})
+        socket.on('admin_message', async (data: { userSessionID: string, message: string, adminSessionID: string }) => {
+            const { userSessionID, adminSessionID, message } = data;
 
-        //     if (conversations[sessionId]) {
-        //         io.to(sessionId).emit("received_user_message", { message: `Admin: ${message}`, sessionId });
-        //     } else {
-        //         console.error(`No conversation found for session ID: ${sessionId}`);
-        //     }
-        // });
+            const findConversation = await messageModel.findOne({sessionID: userSessionID})
+
+            if (findConversation) {
+                const newMessage = { text: message, timestamp: new Date(), isAdmin: true };
+                findConversation.messages.push(newMessage);
+
+                try {
+                    await findConversation.save();
+
+                    const updatedSessionInfo = await messageModel.findOne({sessionID: userSessionID}, { _id: 0, 'messages._id': 0 })
+                
+                    if(updatedSessionInfo){
+                        io.in(userSessionID).emit("all_user_messages", { message, updatedSessionInfo });
+                    }
+                   
+                } catch (error) {
+                    console.error(`Error saving message for session ID: ${userSessionID}`, error);
+                }
+                io.to(userSessionID).emit("admin_message", { message: `message`, userSessionID });
+            } else {
+                console.error(`No conversation found for session ID: ${userSessionID}`);
+            }
+        });
 
         socket.on('disconnect', async () => {
             console.log('Client disconnected');

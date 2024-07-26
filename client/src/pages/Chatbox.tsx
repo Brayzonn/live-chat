@@ -9,7 +9,7 @@ import { ChatboxProps, UserMessageSchema } from '../assets/Types';
 import {formatMessageTimestamp, formatDateHeader, getDateHeader} from '../assets/HelperFunctions';
 
 
-const Chatbox: React.FC<ChatboxProps> = ({sendMessage, updateMessageBoxActive, conversation }) => {
+const Chatbox: React.FC<ChatboxProps> = ({sendMessage, updateMessageBoxActive, closeSocket, conversation }) => {
     
     const [inputFocus, updateInputFocus] = useState<boolean>(false);
     const [userMessage, updateUserMessage] = useState<UserMessageSchema>({ usertext: '' });
@@ -24,7 +24,7 @@ const Chatbox: React.FC<ChatboxProps> = ({sendMessage, updateMessageBoxActive, c
     return (
         <div className='relative w-full bg-inherit h-full flex flex-col justify-start items-start'>
             <div className='px-4 py-[2rem] h-[9%] w-full bg-gradient-to-r from-zinc-100 to-slate-300 flex items-center justify-between sm:min-h-[35px]'>
-                <button onClick={() => updateMessageBoxActive(false)} className='w-full flex justify-between items-start'>
+                <button onClick={() =>{ updateMessageBoxActive(false); closeSocket()}} className='w-full flex justify-between items-start'>
                     <FaChevronLeft className="text-black font-bold text-[19px]" />
                 </button>
 

@@ -1,4 +1,3 @@
-// import { MessageFormat } from "./Types";
 
 export const formatMessageTimestamp = (timestamp: string): string => {
     const messageDate = new Date(timestamp);
