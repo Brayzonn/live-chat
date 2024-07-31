@@ -24,5 +24,6 @@ export interface ChatboxProps {
     updateMessageBoxActive: React.Dispatch<React.SetStateAction<boolean>>,
     conversation: ConversationSchema,
     closeSocket: () => void,
+    isAdminOnline: boolean,
     sendMessage: (message: string) => void,
 }

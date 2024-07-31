@@ -71,9 +71,13 @@ const Landing = () => {
                 updateUserConversation(updatedSessionInfo)
             });   
 
-            newSocket.on('admin_message', (data) => {
-                const { message } = data;
-                console.log(message)
+            newSocket.on('admin_activity', (data) => {
+                const { status} = data;
+                if (status === true) {
+                    updateIsAdminOnline(true)
+                }else{
+                    updateIsAdminOnline(false)
+                }
             });
 
         }else{
@@ -83,8 +87,13 @@ const Landing = () => {
                     updateUserConversation(updatedSessionInfo)
                 });
 
-                socket.on('admin_message', (data) => {
-                    const { message } = data;
+                socket.on('admin_activity', (data) => {
+                    const { status } = data;
+                    if (status === true) {
+                        updateIsAdminOnline(true)
+                    }else{
+                        updateIsAdminOnline(false)
+                    }
                 });
             }      
         }
@@ -114,12 +123,13 @@ const Landing = () => {
         if (socket) {
             socket.emit("user_message", { sessionId: sessionToUse, message });
             
-            
             socket.on('admin_activity', (data) => {
-                const { message } = data;
-                if (message && message.trim() !== '') {
+                const { status } = data;
+                if (status === true) {
                     updateIsAdminOnline(true)
-                } 
+                }else{
+                    updateIsAdminOnline(false)
+                }
             });
         }
 
@@ -166,7 +176,7 @@ const Landing = () => {
                             </div>
                       </div>)
                   :
-                  <Chatbox closeSocket = {closeSocket} conversation={userConversation}  sendMessage = {sendMessage} updateMessageBoxActive = {updateMessageBoxActive} />}
+                  <Chatbox isAdminOnline ={isAdminOnline} closeSocket = {closeSocket} conversation={userConversation}  sendMessage = {sendMessage} updateMessageBoxActive = {updateMessageBoxActive} />}
               </div>
               }
 

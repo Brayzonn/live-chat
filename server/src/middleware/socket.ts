@@ -149,12 +149,24 @@ const webSocketConfig = async (server: http.Server, corsOptions: CorsOptions) =>
                 if(existingSession){
                     socket.join(userSessionId);
                     io.to(adminSessionId).emit("all_user_messages", {existingSession });
-                    io.to(userSessionId).emit('admin_activity', { message: 'Admin has joined the conversation' });
-                    io.to(adminSessionId).emit('admin_activity',{ message: `You have joined the session: ${userSessionId}` });
+                    io.to(userSessionId).emit('admin_activity', { status: true, message: 'Admin has joined the conversation' });
+                    io.to(adminSessionId).emit('admin_activity',{ status: true, message: `You have joined the session` });
                 }
             } catch (error) {
                     console.error('Error joining admin to user session:', error);
                     socket.emit('admin_errors_feedback', { message: 'Failed to join the session' });
+            }
+        });
+
+        socket.on('admin_leave_conversation', async ({ userSessionId, adminSessionId }: { userSessionId: string, adminSessionId: string }) => {
+            try {
+                const existingSession = await messageModel.findOne({ sessionID: userSessionId }, { _id: 0, 'messages._id': 0 });
+
+                if(existingSession){
+                    io.to(userSessionId).emit('admin_activity', { status: false, message: 'Admin has left the conversation' });
+                }
+            } catch (error) {
+                    console.error('Error leaving user session:', error);
             }
         });
 
@@ -176,11 +188,10 @@ const webSocketConfig = async (server: http.Server, corsOptions: CorsOptions) =>
                     if(updatedSessionInfo){
                         io.in(userSessionID).emit("all_user_messages", { message, updatedSessionInfo });
                     }
-                   
                 } catch (error) {
                     console.error(`Error saving message for session ID: ${userSessionID}`, error);
                 }
-                io.to(userSessionID).emit("admin_message", { message: `message`, userSessionID });
+                
             } else {
                 console.error(`No conversation found for session ID: ${userSessionID}`);
             }

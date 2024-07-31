@@ -9,7 +9,7 @@ import { ChatboxProps, UserMessageSchema } from '../assets/Types';
 import {formatMessageTimestamp, formatDateHeader, getDateHeader} from '../assets/HelperFunctions';
 
 
-const Chatbox: React.FC<ChatboxProps> = ({sendMessage, updateMessageBoxActive, closeSocket, conversation }) => {
+const Chatbox: React.FC<ChatboxProps> = ({sendMessage, updateMessageBoxActive, closeSocket, conversation, isAdminOnline }) => {
     
     const [inputFocus, updateInputFocus] = useState<boolean>(false);
     const [userMessage, updateUserMessage] = useState<UserMessageSchema>({ usertext: '' });
@@ -23,18 +23,20 @@ const Chatbox: React.FC<ChatboxProps> = ({sendMessage, updateMessageBoxActive, c
 
     return (
         <div className='relative w-full bg-inherit h-full flex flex-col justify-start items-start'>
-            <div className='px-4 py-[2rem] h-[9%] w-full bg-gradient-to-r from-zinc-100 to-slate-300 flex items-center justify-between sm:min-h-[35px]'>
+            <div className='px-4 h-[9%] w-full bg-gradient-to-r from-zinc-100 to-slate-300 flex items-center justify-between sm:h-[60px]'>
                 <button onClick={() =>{ updateMessageBoxActive(false); closeSocket()}} className='w-full flex justify-between items-start'>
                     <FaChevronLeft className="text-black font-bold text-[19px]" />
                 </button>
 
-                <div className='flex'>
-                    <img src={botImage} alt="profile" className='shrink-0 w-[25px] h-[25px]' />
-                    <div className='w-[8px] h-[8px] rounded-[10px] bg-green-400 shrink-0'></div>
-                </div>
+                {isAdminOnline &&
+                    <div className='flex justify-center items-center space-x-1'>
+                        <img src={botImage} alt="profile" className='shrink-0 w-[20px] h-[20px]' />
+                        <div className='w-[9px] h-[9px] rounded-[10px] bg-green-400 shrink-0'></div>
+                    </div>
+                }
             </div>
 
-            <div className='w-full h-[82%] px-4 py-2 bg-inherit flex flex-col space-y-3 overflow-y-auto sm:h-[385px]'>
+            <div className='w-full h-[82%] px-4 py-2 bg-inherit flex flex-col space-y-3 overflow-y-auto sm:h-[460px]'>
                 {conversation.messages.map((data, index) => {
 
                     const messageDate = new Date(data.timestamp);
@@ -50,7 +52,7 @@ const Chatbox: React.FC<ChatboxProps> = ({sendMessage, updateMessageBoxActive, c
                             {data.isAdmin ? (
                                 <div className='w-full pt-4 flex justify-start items-center space-x-3'>
                                     <div className='flex'>
-                                        <img src={botImage} alt="profile" className='shrink-0 w-[25px] h-[25px]' />
+                                        <img src={botImage} alt="profile" className='shrink-0 w-[20px] h-[20px]' />
                                     </div>
                                     <div className='flex flex-col space-y-1'>
                                         <div className='p-4 bg-[#f5f5f5] border border-[#f5f5f5] rounded-[5px]'>
