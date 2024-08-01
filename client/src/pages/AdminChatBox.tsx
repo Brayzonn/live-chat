@@ -161,7 +161,7 @@ const AdminChatBox = () => {
                         <div className='w-full flex space-x-3'>
                             <button onClick={() => adminGetAllSessions()} className='w-[200px] h-[50px] bg-red-500'>
                                 Find Conversations
-                            </button>
+                            </button> 
                             <p>Active Rooms</p>
                             {allSessionData.map((eachSession) => (
                                 <button onClick={() => getRoomInfo(eachSession.sessionID)} key={eachSession.sessionID} className='p-4 bg-[#08389f] border border-[#024AE8] rounded-[5px]'>

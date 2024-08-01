@@ -1,8 +1,11 @@
 import { Server } from 'socket.io';
 import http from "http";
+import { CorsOptions } from 'cors';
+
+
 import messageModel from '../models/messageModel';
 import conversationModel from '../models/conversationsModel';
-import { CorsOptions } from 'cors';
+import sendMessageNotificationEmail from '../utils/nodemailer';
 
 
 const webSocketConfig = async (server: http.Server, corsOptions: CorsOptions) => {
@@ -11,9 +14,8 @@ const webSocketConfig = async (server: http.Server, corsOptions: CorsOptions) =>
     });
 
     io.on('connection', (socket) => {
-        console.log('New client connected');
 
-        //when user joins conversation
+        //when user starts conversation
         socket.on('start_conversation', async ({ sessionId }: { sessionId: string }) => {
 
             const findConversation = await conversationModel.findOne({sessionId})
@@ -100,6 +102,7 @@ const webSocketConfig = async (server: http.Server, corsOptions: CorsOptions) =>
                             
                                 if(updatedSessionInfo){
                                     io.in(sessionId).emit("all_user_messages", { message, updatedSessionInfo });
+                                    await sendMessageNotificationEmail(message)
                                 }
                                
                             } catch (error) {
