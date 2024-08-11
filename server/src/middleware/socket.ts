@@ -6,6 +6,8 @@ import { CorsOptions } from 'cors';
 import messageModel from '../models/messageModel';
 import conversationModel from '../models/conversationsModel';
 import sendMessageNotificationEmail from '../utils/nodemailer';
+import ensureAdminSocket from '../utils/socketAuth';
+
 
 
 const webSocketConfig = async (server: http.Server, corsOptions: CorsOptions) => {
@@ -122,27 +124,32 @@ const webSocketConfig = async (server: http.Server, corsOptions: CorsOptions) =>
 
 
         //send all available session data to admin on dashboard login
-        socket.on('admin_signin', async ({ sessionId }: { sessionId: string }) => {
-            const findConversations = await conversationModel.find({});
-            
-            if (findConversations.length === 0) {
-                io.to(sessionId).emit('admin_errors_feedback', { message: 'No sessions available' });
-            } else {
-                socket.join(sessionId)
-
-                const allSessionData = [];
-    
-                for (const conversation of findConversations) {
-                    try {
-                        const sessionData = await messageModel.find({ sessionID: conversation.sessionID }, { _id: 0, 'messages._id': 0 });
-                        allSessionData.push(...sessionData);
-                    } catch (err) {
-                        console.error(`Error fetching data for conversation ID: ${conversation.sessionID}`, err);
+        socket.on('admin_signin', (data, callback) => {
+            ensureAdminSocket(data, socket, callback, async () => {
+                const { sessionId } = data;
+        
+                const findConversations = await conversationModel.find({});
+        
+                if (findConversations.length === 0) {
+                    io.to(sessionId).emit('admin_errors_feedback', { message: 'No sessions available' });
+                } else {
+                    socket.join(sessionId);
+        
+                    const allSessionData = [];
+        
+                    for (const conversation of findConversations) {
+                        try {
+                            const sessionData = await messageModel.find({ sessionID: conversation.sessionID }, { _id: 0, 'messages._id': 0 });
+                            allSessionData.push(...sessionData);
+                        } catch (err) {
+                            console.error(`Error fetching data for conversation ID: ${conversation.sessionID}`, err);
+                        }
                     }
+                    io.to(sessionId).emit('active_rooms_info', { allSessionData });
                 }
-                io.to(sessionId).emit('active_rooms_info', { allSessionData });
-            }
+            });
         });
+        
         
         // Handle the admin joining a user's conversation
         socket.on('admin_join_conversation', async ({ userSessionId, adminSessionId }: { userSessionId: string, adminSessionId: string }) => {
@@ -200,29 +207,28 @@ const webSocketConfig = async (server: http.Server, corsOptions: CorsOptions) =>
             }
         });
 
-        socket.on('disconnect', async () => {
-            console.log('Client disconnected');
+        //when admin ends conversation and delete history
+        socket.on('end_conversation', async (data: { userSessionID: string, adminSessionID: string }) => {
+            const { userSessionID, adminSessionID } = data;
+        
+            try {
+                if (adminSessionID === 'admin') {
+                    const conversations = await conversationModel.findOne({ sessionID: userSessionID });
+                    const findMessageModel = await messageModel.findOne({ sessionID: userSessionID });
+        
+                    if (conversations && findMessageModel) {
+                        await conversationModel.deleteOne({ sessionID: userSessionID });
+                        await findMessageModel.deleteOne({ sessionID: userSessionID });
 
-            // try {
-            //     const conversations = await ConversationModel.find({ socketIds: socket.id });
-
-            //     for (const conversation of conversations) {
-            //         // Remove the disconnected socket ID from the conversation
-            //         const updatedSocketIds = conversation.socketIds.filter(id => id !== socket.id);
-
-            //         if (updatedSocketIds.length === 0) {
-            //             // If no socket IDs left, delete the conversation
-            //             await ConversationModel.deleteOne({ sessionId: conversation.sessionId });
-            //         } else {
-            //             // Otherwise, update the conversation with the remaining socket IDs
-            //             conversation.socketIds = updatedSocketIds;
-            //             await conversation.save();
-            //         }
-            //     } 
-            // } catch (error) {
-            //     console.log(error)
-            // }
+                        socket.emit('admin_success_feedback', {message: 'Conversation ended'})
+                    }
+                }         
+            } catch (error) {
+                console.log(error);
+                socket.emit('admin_errors_feedback', { message: 'Failed to end conversation' });
+            }
         });
+        
     });
 };
 

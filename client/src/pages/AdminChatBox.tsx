@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import io, { Socket } from 'socket.io-client';
 import { toast } from 'react-toastify';
 
+import { FaTrashAlt } from "react-icons/fa";
+
 import Chatbox from './Chatbox';
 import { ConversationSchema } from '../assets/Types';
 
@@ -9,6 +11,7 @@ const AdminChatBox = () => {
 
     //session storate variables
     const userSessionIDFromSessionStorage = sessionStorage.getItem('userSessionID');
+    const adminToken = localStorage.getItem('adminToken'); 
 
     const [chatboxActive, updateChatBoxActivity] = useState<boolean>(false);
     const [isAdminOnline, updateIsAdminOnline] = useState<boolean>(false)
@@ -44,7 +47,11 @@ const AdminChatBox = () => {
     //get available all sessions 
     const adminGetAllSessions = () => {
         if (!socket) {
-            const newSocket = io(ENDPOINT);
+            const newSocket = io(ENDPOINT, {
+                auth: {
+                    token: adminToken
+                }
+            });
             setSocket(newSocket);
 
             newSocket.emit('admin_signin', { sessionId: 'admin' });
@@ -110,11 +117,7 @@ const AdminChatBox = () => {
 
             socket.on('admin_activity', (data) => {
                 const { status} = data;
-                if (status === true) {
-                    updateIsAdminOnline(true)
-                }else{
-                    updateIsAdminOnline(false)
-                }
+                updateIsAdminOnline(status === true);
             });
 
         }else{
@@ -131,9 +134,15 @@ const AdminChatBox = () => {
     };
 
     //reconnect to room when admin exits chat
-    const reconnectToRoom = (userSessionId : string) =>{
-        const newSocket = io(ENDPOINT);
+    const reconnectToRoom = (userSessionId : string) => {
+        const newSocket = io(ENDPOINT, {
+            auth: {
+                token: adminToken
+            }
+        });
+
         setSocket(newSocket);
+        
         const filteredSession = allSessionData.find(item => item.sessionID === userSessionId);
     
         if (filteredSession) {
@@ -144,50 +153,63 @@ const AdminChatBox = () => {
 
         newSocket.on('admin_activity', (data) => {
             const { status} = data;
-            if (status === true) {
-                updateIsAdminOnline(true)
-            }else{
-                updateIsAdminOnline(false)
-            }
+            updateIsAdminOnline(status === true);
         });
     }
 
+    //delete chat session
+    const deleteChatHistory = (userSessionId : string) => {
+        if(socket){
+           socket.emit('admin_success_feedback', { userSessionId, adminSessionID: 'admin' });  
 
-    return (
-        <>
-            {!chatboxActive ? (
-                <div className="absolute h-[100vh] w-full flex flex-col justify-start items-start overflow-hidden bg-white">
-                    <div className="relative h-full w-full overflow-x-hidden flex flex-col justify-start items-start text-black">
-                        <div className='w-full flex space-x-3'>
-                            <button onClick={() => adminGetAllSessions()} className='w-[200px] h-[50px] bg-red-500'>
-                                Find Conversations
-                            </button> 
-                            <p>Active Rooms</p>
-                            {allSessionData.map((eachSession) => (
-                                <button onClick={() => getRoomInfo(eachSession.sessionID)} key={eachSession.sessionID} className='p-4 bg-[#08389f] border border-[#024AE8] rounded-[5px]'>
+           socket.on('active_rooms_info', (data) => {
+                const { allSessionData } = data;
+                updateAllSessionData(allSessionData);
+           });
+            
+        }
+    }
+
+
+    return (            
+        <div className="absolute h-[100vh] w-full flex flex-col justify-start items-start overflow-hidden bg-white">
+            <div className="relative h-full w-full overflow-x-hidden flex flex-col justify-start items-start text-black">
+                
+                {!chatboxActive ? (
+                    <div className='w-full py-3 flex flex-col justify-center items-center space-y-3'>
+                        <button onClick={() => adminGetAllSessions()} className='w-[200px] h-[50px] text-white bg-green-500 border border-inherit rounded-md'>
+                            Find Conversations
+                        </button> 
+                        <p>Active Rooms : </p>
+                        {allSessionData.map((eachSession) => (
+                            <div className='flex items-center space-x-1' key={eachSession.sessionID}>
+                                <button onClick={() => getRoomInfo(eachSession.sessionID)} className='w-[172px] min-h-[50px] p-4 bg-[#08389f] border border-[#024AE8] rounded-[5px]'>
                                     <p className='text-[15px] text-white'>{eachSession.sessionID}</p>
                                 </button>
-                            ))}
-                        </div>
+
+                                <button onClick={() => deleteChatHistory(eachSession.sessionID)} className='p-1 flex justify-center items-center w-[20px] h-[20px] bg-red-500 border border-red-500 rounded-[5px]'>
+                                    <FaTrashAlt className="text-white text-[12px]" />
+                                </button>
+                            </div>
+                        ))}
                     </div>
-                </div>
-            ) : (
-                <div className="absolute h-[100vh] w-full flex flex-col justify-start items-start overflow-hidden bg-white">
-                    <div className="relative h-full w-full overflow-x-hidden flex flex-col justify-start items-start text-black">   
-                        <div className='fixed bottom-0 right-0 w-screen h-screen flex flex-col justify-start items-start bg-white border-inherit sm:right-[10px] sm:bottom-[20px] sm:border sm:rounded-[20px] sm:w-[400px] sm:h-[580px] shadow-[0px_4px_10px_rgba(0,0,0,0.1),0px_2px_5px_rgba(0,0,0,0.05)] overflow-hidden'>
-                                <Chatbox 
-                                    isAdminOnline={isAdminOnline} 
-                                    closeSocket={closeSocket} 
-                                    conversation={activeUserSessionData} 
-                                    sendMessage={sendMessage} 
-                                    updateMessageBoxActive={updateChatBoxActivity} 
-                                />
-                        </div>
+                ) : (
+                    <div className='fixed bottom-0 right-0 w-screen h-screen flex flex-col justify-start items-start bg-white border-inherit sm:right-[10px] sm:bottom-[20px] sm:border sm:rounded-[20px] sm:w-[400px] sm:h-[580px] shadow-[0px_4px_10px_rgba(0,0,0,0.1),0px_2px_5px_rgba(0,0,0,0.05)] overflow-hidden'>
+                        <Chatbox 
+                            isAdminOnline={isAdminOnline} 
+                            closeSocket={closeSocket} 
+                            conversation={activeUserSessionData} 
+                            sendMessage={sendMessage} 
+                            updateMessageBoxActive={updateChatBoxActivity} 
+                        />
                     </div>
-                </div>
-            )}
-        </>
+                 
+                )}
+
+            </div>
+        </div>
     );
+    
 
 }
     
