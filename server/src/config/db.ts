@@ -1,7 +1,7 @@
 import mongoose, { ConnectOptions } from 'mongoose';
 require('dotenv').config();
 
-const mongoURI = `mongodb+srv://${process.env.MongoName}:${process.env.MongoPass}@zoneyprojects.sjbew2h.mongodb.net/minilink?retryWrites=true&w=majority`
+const mongoURI = process.env.mongoURI ? process.env.mongoURI : ''
 
 
 //connect to Mongo

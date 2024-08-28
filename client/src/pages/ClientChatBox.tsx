@@ -11,7 +11,7 @@ import Chatbox from './Chatbox';
 import { ConversationSchema } from '../assets/Types';
 
 
-const Landing = () => {
+const ClientChatBox = () => {
   
   //session storate variables
   const userSessionIDFromSessionStorage = sessionStorage.getItem('userSessionID');
@@ -185,4 +185,4 @@ const Landing = () => {
   );
 }
 
-export default Landing;
+export default ClientChatBox;

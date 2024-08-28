@@ -4,18 +4,16 @@ import userModel from '../models/usermodel';
 
 //function to validate user sign in
 const validateLogin = async (username: string, password: string ) => {
-    //check db for user
-    const userResp =  await userModel.findOne({ email: username })
 
-    //if user exists
-    if (userResp){
-        //check password
-        const validatePassword = await comparePasswordWithHash(password, userResp.password);
+    const userExists =  await userModel.findOne({ email: username })
+
+    if (userExists){
+        const validatePassword = await comparePasswordWithHash(password, userExists.password);
 
         if(!validatePassword){
             return ({ errMsg: 'Incorrect Password!' })
         }else{
-           return({successMessage: 'Sign in successful', userId: userResp._id}) 
+           return({successMessage: 'Sign in successful', userId: userExists._id}) 
         }
     }else{
         return ({ errMsg: 'No account found.' });

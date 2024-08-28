@@ -11,7 +11,7 @@ const AdminChatBox = () => {
 
     //session storate variables
     const userSessionIDFromSessionStorage = sessionStorage.getItem('userSessionID');
-    const adminToken = localStorage.getItem('adminToken'); 
+    const [adminToken, setAdminToken] = useState<string | null>(null);
 
     const [chatboxActive, updateChatBoxActivity] = useState<boolean>(false);
     const [isAdminOnline, updateIsAdminOnline] = useState<boolean>(false)
@@ -26,6 +26,10 @@ const AdminChatBox = () => {
     });
 
 
+    useEffect(() => {
+        const token = sessionStorage.getItem('adminToken');
+        setAdminToken(token);
+    }, []);
 
     //
     useEffect(() => {
@@ -46,37 +50,41 @@ const AdminChatBox = () => {
     
     //get available all sessions 
     const adminGetAllSessions = () => {
-        if (!socket) {
-            const newSocket = io(ENDPOINT, {
-                auth: {
-                    token: adminToken
-                }
-            });
-            setSocket(newSocket);
-
-            newSocket.emit('admin_signin', { sessionId: 'admin' });
-
-            newSocket.on('active_rooms_info', (data) => {
-                const { allSessionData } = data;
-                updateAllSessionData(allSessionData);
-            });
-
-            newSocket.on('admin_errors_feedback', (data) => {
-                const { message } = data;
-
-                toast.error(message, {
-                    position:"top-center",
-                    autoClose: 5000,
-                    hideProgressBar:false,
-                    closeOnClick:true,
-                    rtl:false,
-                    pauseOnFocusLoss:false,
-                    draggable:false,
-                    pauseOnHover: false,   
+        if(adminToken){
+            if (!socket) {
+                const newSocket = io(ENDPOINT, {
+                    auth: {
+                        token: adminToken
+                    }
                 });
-                
-            });
+
+                setSocket(newSocket);
+    
+                newSocket.emit('admin_signin', { sessionId: 'admin' });
+    
+                newSocket.on('active_rooms_info', (data) => {
+                    const { allSessionData } = data;
+                    updateAllSessionData(allSessionData);
+                });
+    
+                newSocket.on('admin_errors_feedback', (data) => {
+                    const { message } = data;
+    
+                    toast.error(message, {
+                        position:"top-center",
+                        autoClose: 5000,
+                        hideProgressBar:false,
+                        closeOnClick:true,
+                        rtl:false,
+                        pauseOnFocusLoss:false,
+                        draggable:false,
+                        pauseOnHover: false,   
+                    });
+                    
+                });
+            }
         }
+       
     };
 
     //when admin closes socket connection
@@ -141,6 +149,8 @@ const AdminChatBox = () => {
             }
         });
 
+        console.log('testtt')
+
         setSocket(newSocket);
         
         const filteredSession = allSessionData.find(item => item.sessionID === userSessionId);
@@ -166,7 +176,6 @@ const AdminChatBox = () => {
                 const { allSessionData } = data;
                 updateAllSessionData(allSessionData);
            });
-            
         }
     }
 
