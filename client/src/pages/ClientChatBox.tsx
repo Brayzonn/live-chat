@@ -49,6 +49,18 @@ const ClientChatBox = () => {
                 updateUserConversation(updatedSessionInfo)
             });
 
+            newSocket.on('admin_activity', (data) => {
+                const { status } = data;
+                updateIsAdminOnline(status);
+            });
+          
+            newSocket.on('delete_convo_for_user', (data) => {
+                const { deletestatus } = data;
+                if (deletestatus) {
+                    sessionStorage.removeItem('userSessionID');
+                }
+            });
+
             return initiateSocket()
         }
 
@@ -80,6 +92,13 @@ const ClientChatBox = () => {
                 }
             });
 
+            newSocket.on('delete_convo_for_user', (data) => {
+                const { deletestatus } = data;
+                if (deletestatus) {
+                    sessionStorage.removeItem('userSessionID');
+                }
+            });
+
         }else{
             if(socket){
                 socket.on('all_user_messages', (data) => {
@@ -93,6 +112,13 @@ const ClientChatBox = () => {
                         updateIsAdminOnline(true)
                     }else{
                         updateIsAdminOnline(false)
+                    }
+                });
+
+                socket.on('delete_convo_for_user', (data) => {
+                    const { deletestatus } = data;
+                    if (deletestatus) {
+                        sessionStorage.removeItem('userSessionID');
                     }
                 });
             }      

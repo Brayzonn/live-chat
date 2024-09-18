@@ -14,7 +14,9 @@ const AdminChatBox = () => {
     const [adminToken, setAdminToken] = useState<string | null>(null);
 
     const [chatboxActive, updateChatBoxActivity] = useState<boolean>(false);
-    const [isAdminOnline, updateIsAdminOnline] = useState<boolean>(false)
+    const [isAdminOnline, updateIsAdminOnline] = useState<boolean>(false);
+
+    const [adminSessionId] = useState<string>(() => `session-${Math.random().toString(36).substr(2, 9)}`);
 
     const ENDPOINT = import.meta.env.VITE_BASE_URL ? import.meta.env.VITE_BASE_URL : '';
     const [socket, setSocket] = useState<Socket | null>(null);
@@ -25,28 +27,11 @@ const AdminChatBox = () => {
         messages: []
     });
 
-
+    
     useEffect(() => {
         const token = sessionStorage.getItem('adminToken');
         setAdminToken(token);
     }, []);
-
-    //
-    useEffect(() => {
-        if (socket) {
-            socket.on('all_user_messages', (data) => {
-                const { updatedSessionInfo } = data;
-
-                updateActiveUserSessionData(updatedSessionInfo)
-            });
-        }
-
-        return () => {  
-            if (socket) {
-                socket.off('all_user_messages');
-            }
-        };
-    }, [socket]);
     
     //get available all sessions 
     const adminGetAllSessions = () => {
@@ -60,7 +45,7 @@ const AdminChatBox = () => {
 
                 setSocket(newSocket);
     
-                newSocket.emit('admin_signin', { sessionId: 'admin' });
+                newSocket.emit('admin_signin', {adminSessionId});
     
                 newSocket.on('active_rooms_info', (data) => {
                     const { allSessionData } = data;
@@ -90,7 +75,7 @@ const AdminChatBox = () => {
     //when admin closes socket connection
     const closeSocket = () => {
         if (socket) {
-            socket.emit('admin_signin', { sessionId: 'admin' });
+            socket.emit('admin_signin', {adminSessionId});
     
             //update allSessionData then close connection
             const handleActiveRoomsInfo = (data: { allSessionData: ConversationSchema[] }) => {
@@ -99,7 +84,7 @@ const AdminChatBox = () => {
 
                 if(userSessionIDFromSessionStorage){
                     const parsedSessionID = JSON.parse(userSessionIDFromSessionStorage);
-                    socket.emit('admin_leave_conversation', { userSessionId: parsedSessionID, adminSessionID: 'admin' });
+                    socket.emit('admin_leave_conversation', { userSessionId: parsedSessionID });
                 }
                 updateIsAdminOnline(false)
                 socket.disconnect();
@@ -112,15 +97,16 @@ const AdminChatBox = () => {
 
     //when admin selects room to join
     const getRoomInfo = (userSessionId: string) => {
+  
         const filteredSession = allSessionData.find(item => item.sessionID === userSessionId);
 
         sessionStorage.setItem('userSessionID', JSON.stringify(userSessionId))
         
         if(socket){
             if (filteredSession) {
-                updateActiveUserSessionData(filteredSession);
+                updateActiveUserSessionData(filteredSession)
                 updateChatBoxActivity(true);
-                socket.emit('admin_join_conversation', { userSessionId, adminSessionID: 'admin' });      
+                socket.emit('admin_join_conversation', { userSessionId, adminSessionId});      
             }
 
             socket.on('admin_activity', (data) => {
@@ -137,7 +123,12 @@ const AdminChatBox = () => {
     //when admin sends message
     const sendMessage = (message: string) => {
         if (socket) {
-            socket.emit("admin_message", { userSessionID: activeUserSessionData?.sessionID, adminSessionID: 'admin', message });
+            socket.emit("admin_message", { userSessionID: activeUserSessionData?.sessionID, message });
+
+            socket.on('all_user_messages', (data) => {
+                const { updatedSessionInfo } = data;
+                updateActiveUserSessionData(updatedSessionInfo)
+            });
         }
     };
 
@@ -149,16 +140,14 @@ const AdminChatBox = () => {
             }
         });
 
-        console.log('testtt')
-
         setSocket(newSocket);
         
         const filteredSession = allSessionData.find(item => item.sessionID === userSessionId);
-    
+
         if (filteredSession) {
             updateActiveUserSessionData(filteredSession);
             updateChatBoxActivity(true);
-            newSocket.emit('admin_join_conversation', { userSessionId, adminSessionID: 'admin' });   
+            newSocket.emit('admin_join_conversation', { userSessionId });   
         }
 
         newSocket.on('admin_activity', (data) => {
@@ -167,15 +156,20 @@ const AdminChatBox = () => {
         });
     }
 
-    //delete chat session
-    const deleteChatHistory = (userSessionId : string) => {
+    //when admin deletes chat 
+    const deleteChat = (userSessionID : string) => {
         if(socket){
-           socket.emit('admin_success_feedback', { userSessionId, adminSessionID: 'admin' });  
+            socket.emit('end_conversation', {userSessionID})
 
-           socket.on('active_rooms_info', (data) => {
-                const { allSessionData } = data;
-                updateAllSessionData(allSessionData);
-           });
+            socket.on('admin_success_feedback', (data) =>{
+                const { message } = data;
+                toast.success(message)
+            })
+
+            socket.on('admin_errors_feedback', (data) =>{
+                const { message } = data;
+                toast.success(message)
+            })            
         }
     }
 
@@ -196,7 +190,7 @@ const AdminChatBox = () => {
                                     <p className='text-[15px] text-white'>{eachSession.sessionID}</p>
                                 </button>
 
-                                <button onClick={() => deleteChatHistory(eachSession.sessionID)} className='p-1 flex justify-center items-center w-[20px] h-[20px] bg-red-500 border border-red-500 rounded-[5px]'>
+                                <button onClick={() => deleteChat(eachSession.sessionID)} className='p-1 flex justify-center items-center w-[20px] h-[20px] bg-red-500 border border-red-500 rounded-[5px]'>
                                     <FaTrashAlt className="text-white text-[12px]" />
                                 </button>
                             </div>

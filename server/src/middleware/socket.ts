@@ -126,26 +126,26 @@ const webSocketConfig = async (server: http.Server, corsOptions: CorsOptions) =>
         //send all available session data to admin on dashboard login
         socket.on('admin_signin', (data) => {
             ensureAdminSocket(data, socket, async () => {
-                const { sessionId } = data;
+                const { adminSessionId } = data;
         
                 const findConversations = await conversationModel.find({});
         
                 if (findConversations.length === 0) {
-                    io.to(sessionId).emit('admin_errors_feedback', { message: 'No sessions available' });
+                    io.to(adminSessionId).emit('admin_errors_feedback', { message: 'No sessions available' });
                 } else {
-                    socket.join(sessionId);
+                    socket.join(adminSessionId);
         
                     const allSessionData = [];
         
                     for (const conversation of findConversations) {
                         try {
-                            const sessionData = await messageModel.find({ sessionID: conversation.sessionID }, { _id: 0, 'messages._id': 0 });
+                            const sessionData = await messageModel.find({ sessionID: conversation.sessionID }, { _id: 0, __v: 0, 'messages._id': 0 });
                             allSessionData.push(...sessionData);
                         } catch (err) {
                             console.error(`Error fetching data for conversation ID: ${conversation.sessionID}`, err);
                         }
                     }
-                    io.to(sessionId).emit('active_rooms_info', { allSessionData });
+                    io.to(adminSessionId).emit('active_rooms_info', { allSessionData });
                 }
             });
         });
@@ -157,7 +157,7 @@ const webSocketConfig = async (server: http.Server, corsOptions: CorsOptions) =>
                 const{ userSessionId, adminSessionId } = data;
 
                 try {
-                    const existingSession = await messageModel.findOne({ sessionID: userSessionId }, { _id: 0, 'messages._id': 0 });
+                    const existingSession = await messageModel.findOne({ sessionID: userSessionId }, { _id: 0, __v:0, 'messages._id': 0 });
 
                     if(existingSession){
                         socket.join(userSessionId);
@@ -166,15 +166,15 @@ const webSocketConfig = async (server: http.Server, corsOptions: CorsOptions) =>
                         io.to(adminSessionId).emit('admin_activity',{ status: true, message: `You have joined the session` });
                     }
                 } catch (error) {
-                        console.error('Error joining admin to user session:', error);
-                        socket.emit('admin_errors_feedback', { message: 'Failed to join the session' });
+                    console.error('Error joining admin to user session:', error);
+                    socket.emit('admin_errors_feedback', { message: 'Failed to join the session' });
                 }
             });
         });
 
         socket.on('admin_leave_conversation', (data) => {
             ensureAdminSocket(data, socket, async () => {
-                const{ userSessionId, adminSessionId } = data;
+                const{ userSessionId } = data;
 
                 try {
                     const existingSession = await messageModel.findOne({ sessionID: userSessionId }, { _id: 0, 'messages._id': 0 });
@@ -184,6 +184,7 @@ const webSocketConfig = async (server: http.Server, corsOptions: CorsOptions) =>
                     }
                 } catch (error) {
                         console.error('Error leaving user session:', error);
+                        socket.emit('admin_errors_feedback', { message: 'Failed to end conversation' });
                 }
             })
         });
@@ -191,7 +192,7 @@ const webSocketConfig = async (server: http.Server, corsOptions: CorsOptions) =>
 
         socket.on('admin_message', (data) => {
             ensureAdminSocket(data, socket, async () => {
-                const { userSessionID, adminSessionID, message } = data;
+                const { userSessionID, message } = data;
 
                 const findConversation = await messageModel.findOne({sessionID: userSessionID})
 
@@ -213,6 +214,7 @@ const webSocketConfig = async (server: http.Server, corsOptions: CorsOptions) =>
                     
                 } else {
                     console.error(`No conversation found for session ID: ${userSessionID}`);
+                    socket.emit('admin_errors_feedback', { message: 'Failed to end conversation' });
                 }
             })
         });
@@ -220,20 +222,21 @@ const webSocketConfig = async (server: http.Server, corsOptions: CorsOptions) =>
         //when admin ends conversation and delete history
         socket.on('end_conversation', (data) => {
             ensureAdminSocket(data, socket, async () => {
-                const { userSessionID, adminSessionID } = data;
+                const { userSessionID } = data;
             
                 try {
-                    if (adminSessionID === 'admin') {
-                        const conversations = await conversationModel.findOne({ sessionID: userSessionID });
-                        const findMessageModel = await messageModel.findOne({ sessionID: userSessionID });
             
-                        if (conversations && findMessageModel) {
-                            await conversationModel.deleteOne({ sessionID: userSessionID });
-                            await findMessageModel.deleteOne({ sessionID: userSessionID });
+                    const conversations = await conversationModel.findOne({ sessionID: userSessionID });
+                    const findMessageModel = await messageModel.findOne({ sessionID: userSessionID });
+        
+                    if (conversations && findMessageModel) {
+                        await conversationModel.deleteOne({ sessionID: userSessionID });
+                        await findMessageModel.deleteOne({ sessionID: userSessionID });
 
-                            socket.emit('admin_success_feedback', {message: 'Conversation ended'})
-                        }
-                    }         
+                        socket.emit('admin_success_feedback', {message: 'Conversation ended'})
+                        io.in(userSessionID).emit("delete_convo_for_user", {deletestatus: true});
+                    }
+                           
                 } catch (error) {
                     console.log(error);
                     socket.emit('admin_errors_feedback', { message: 'Failed to end conversation' });
