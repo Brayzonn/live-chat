@@ -119,6 +119,30 @@ chat bot/
 
 ```
 
+
+## Project Structure
+
+env variables
+
+
+```
+//client .env
+
+VITE_BASE_URL = "http://localhost:{PORT}"
+
+//server .env
+
+senderEmail = {email used by nodemailer to send chat notifications}
+emailPassword = {senderEmail password}
+receiverEmail = {email address to receive the chat notification }
+
+mongoURI = {mongoURI for database}
+JWT_SECRET = {JWT Secret}
+ENDPOINT = 'http://localhost:{PORT}'
+
+```
+
+
 ## Contributing
 
 Contributions are welcome! Please follow these steps:
