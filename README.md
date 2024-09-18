@@ -124,12 +124,14 @@ chat bot/
 
 env variables
 
-
 ```
 //client .env
 
 VITE_BASE_URL = "http://localhost:{PORT}"
 
+```
+
+```
 //server .env
 
 senderEmail = {email used by nodemailer to send chat notifications}
