@@ -1,4 +1,4 @@
-# MEDHUB
+# ChatBot
 
 [chatbot](#) 🔗 is a support chat application designed to facilitate communication between an admin and multiple users. Each user can initiate a chat session, all of which are directed to the admin. The admin acts as the central receiver for all user interactions, making the app ideal for managing support inquiries and providing assistance in real-time.
 
@@ -11,7 +11,6 @@
 - [Folder Structure](#folder-structure)
 - [Project Structure](#Project-structure)
 - [Contributing](#Contributing)
-``
 
 ## Prerequisites
 
