@@ -6,8 +6,8 @@ const transporter = nodemailer.createTransport({
     port: 465,
     secure: true,
     auth: {
-        user: process.env.senderEmail,
-        pass: process.env.emailPassword,
+        user: process.env.SENDER_EMAIL,
+        pass: process.env.EMAIL_PASSWORD,
     },
     tls: {
         rejectUnauthorized: true
@@ -17,8 +17,8 @@ const transporter = nodemailer.createTransport({
 const sendMessageNotificationEmail = async (message: string) => {
 
     const mailOptions = {
-        from: process.env.senderEmail,
-        to: process.env.receiverEmail,
+        from: process.env.SENDER_EMAIL,
+        to: process.env.RECEIVER_EMAIL,
         subject: 'New Message From Chatbot!',
         html: `${message}`
     };

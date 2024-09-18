@@ -134,13 +134,15 @@ VITE_BASE_URL = "http://localhost:{PORT}"
 ```
 //server .env
 
-senderEmail = {email used by nodemailer to send chat notifications}
-emailPassword = {senderEmail password}
-receiverEmail = {email address to receive the chat notification }
+SENDER_EMAIL={email used by Nodemailer to send chat notifications}
+EMAIL_PASSWORD={password for the sender email}
+RECEIVER_EMAIL={email address to receive chat notifications}
 
-mongoURI = {mongoURI for database}
-JWT_SECRET = {JWT Secret}
-ENDPOINT = 'http://localhost:{PORT}'
+MONGO_URI={MongoDB connection URI}
+JWT_SECRET={JWT secret for authentication}
+CORS_ENDPOINT={Client URI, e.g., http://localhost:{PORT}}
+PORT={Server port number, e.g., 4000}
+
 
 ```
 

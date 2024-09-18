@@ -5,7 +5,7 @@ import { signin } from '../controllers/mainController';
 
 
 router.get('/', (req: Request, res: Response , next: NextFunction)=>{
-    res.send('fuck off!!')
+    res.send('API is too active')
 })
 
 router.post('/signin', signin)

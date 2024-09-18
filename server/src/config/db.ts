@@ -1,7 +1,7 @@
-import mongoose, { ConnectOptions } from 'mongoose';
+import mongoose from 'mongoose';
 require('dotenv').config();
 
-const mongoURI = process.env.mongoURI ? process.env.mongoURI : ''
+const mongoURI = process.env.MONGO_URI ? process.env.MONGO_URI : ''
 
 
 //connect to Mongo
