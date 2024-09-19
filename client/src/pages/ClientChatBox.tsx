@@ -31,43 +31,53 @@ const ClientChatBox = () => {
   })
 
 
-  //check for socket session ID in session storage and run initiateSocket
-  useEffect(()=>{
+  //check for socket session ID in session storage and initiateSocket
+  useEffect(() => {
+    if (userSessionIDFromSessionStorage) {
+      const parsedSessionID = JSON.parse(userSessionIDFromSessionStorage);
+  
+      if (!socket) {
+        const newSocket = io(ENDPOINT);
+        setSocket(newSocket);
+  
+        newSocket.emit('reconnect_session', { sessionId: parsedSessionID });
+  
+        setupSocketListeners(newSocket);
+      } else {
+        socket.emit('reconnect_session', { sessionId: parsedSessionID });
+        setupSocketListeners(socket);
+      }
+  
+      return initiateSocket();
+    }
+  }, [userSessionIDFromSessionStorage]);
+  
 
-        if(userSessionIDFromSessionStorage && !socket){
+  const setupSocketListeners = (socketInstance: Socket) => {
+        socketInstance.off('all_user_messages');
+        socketInstance.off('admin_activity');
+        socketInstance.off('delete_convo_for_user');
+    
+        socketInstance.on('all_user_messages', (data) => {
+        const { updatedSessionInfo } = data;
+            updateUserConversation(updatedSessionInfo);
+        });
+    
+        socketInstance.on('admin_activity', (data) => {
+        const { status } = data;
+            updateIsAdminOnline(status);
+        });
+    
+        socketInstance.on('delete_convo_for_user', (data) => {
+            const { deletestatus } = data;
+            if (deletestatus) {
+                sessionStorage.removeItem('userSessionID');
+            }
+        });
+  };
+  
 
-            const parsedSessionID = JSON.parse(userSessionIDFromSessionStorage);
-
-            const newSocket = io(ENDPOINT);
-
-            setSocket(newSocket);
-
-            newSocket.emit('reconnect_session', { sessionId: parsedSessionID });
-
-            newSocket.on('all_user_messages', (data) => {
-                const { updatedSessionInfo } = data;
-                updateUserConversation(updatedSessionInfo)
-            });
-
-            newSocket.on('admin_activity', (data) => {
-                const { status } = data;
-                updateIsAdminOnline(status);
-            });
-          
-            newSocket.on('delete_convo_for_user', (data) => {
-                const { deletestatus } = data;
-                if (deletestatus) {
-                    sessionStorage.removeItem('userSessionID');
-                }
-            });
-
-            return initiateSocket()
-        }
-
-   }, [])
-
-
-  //socket initialization
+  //socket initialization when user starts or re-enters conversation
   const initiateSocket = () => {
         if (!userSessionIDFromSessionStorage) {
             const newSocket = io(ENDPOINT);
@@ -101,10 +111,6 @@ const ClientChatBox = () => {
 
         }else{
             if(socket){
-                socket.on('all_user_messages', (data) => {
-                    const { updatedSessionInfo } = data;
-                    updateUserConversation(updatedSessionInfo)
-                });
 
                 socket.on('admin_activity', (data) => {
                     const { status } = data;
@@ -113,6 +119,11 @@ const ClientChatBox = () => {
                     }else{
                         updateIsAdminOnline(false)
                     }
+                });
+
+                socket.on('all_user_messages', (data) => {
+                    const { updatedSessionInfo } = data;
+                    updateUserConversation(updatedSessionInfo)
                 });
 
                 socket.on('delete_convo_for_user', (data) => {
